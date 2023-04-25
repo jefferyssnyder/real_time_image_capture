@@ -23,19 +23,31 @@ class _CameraScreenState extends State<CameraScreen> {
   String result = "results to be shown here";
 
   //TODO declare ImageLabeler
+  dynamic imageLabeler;
+  bool isBusy = false;
 
   @override
   void initState() {
     super.initState();
-    //TODO initialize labeler
+    //initialize labeler
+    final ImageLabelerOptions options =
+        ImageLabelerOptions(confidenceThreshold: 0.5);
+    imageLabeler = ImageLabeler(options: options);
 
-    //TODO initialize the controller
+    //initialize the controller
     controller = CameraController(_cameras[0], ResolutionPreset.high);
     controller.initialize().then((_) {
       if (!mounted) {
         return;
       }
-      controller.startImageStream((image) => {});
+      controller.startImageStream((image) => {
+            if (isBusy == false)
+              {
+                img = image,
+                doImageLabeling(),
+                isBusy = true,
+              },
+          });
       setState(() {});
     }).catchError((Object e) {
       if (e is CameraException) {
@@ -53,7 +65,20 @@ class _CameraScreenState extends State<CameraScreen> {
 
   doImageLabeling() async {
     result = "";
+    InputImage inputImage = getInputImage();
+    final List<ImageLabel> labels = await imageLabeler.processImage(inputImage);
 
+    result = "";
+    for (ImageLabel label in labels) {
+      final String text = label.label;
+      final int index = label.index;
+      final double confidence = label.confidence;
+      result += text;
+    }
+    setState(() {
+      result;
+    });
+    isBusy = false;
   }
 
   CameraImage? img;
